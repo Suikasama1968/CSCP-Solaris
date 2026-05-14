@@ -1,0 +1,8 @@
+*.o
+*.d
+*.ROM
+*.rom
+*.MZT
+*.mzt
+emuz1500-solaris
+emuz1500-solaris10

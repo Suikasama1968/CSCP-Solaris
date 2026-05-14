@@ -1,0 +1,324 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{68b9a4ab-e72d-4f72-ba5a-62bd7ff72fb8}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;rc;def;r;odl;idl;hpj;bat</Extensions>
+    </Filter>
+    <Filter Include="Source Files\EMU Source Files">
+      <UniqueIdentifier>{6a239d4c-942d-4fab-b159-49434d6d6e34}</UniqueIdentifier>
+      <Extensions>cpp</Extensions>
+    </Filter>
+    <Filter Include="Source Files\OSD Source Files">
+      <UniqueIdentifier>{8089818f-8f9b-4ed7-866b-40214c06cd74}</UniqueIdentifier>
+      <Extensions>cpp</Extensions>
+    </Filter>
+    <Filter Include="Source Files\VM Common Source Files">
+      <UniqueIdentifier>{c72811b6-50d3-4da3-a716-378f1915ae03}</UniqueIdentifier>
+      <Extensions>cpp</Extensions>
+    </Filter>
+    <Filter Include="Source Files\VM Driver Source Files">
+      <UniqueIdentifier>{0ca81d4e-345e-48a2-bc30-34c7b26f57f7}</UniqueIdentifier>
+      <Extensions>cpp</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{8ae72ee9-5b29-4d32-be76-7786bd65279f}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl</Extensions>
+    </Filter>
+    <Filter Include="Header Files\EMU Header Files">
+      <UniqueIdentifier>{f8d916ac-1d48-4b2f-8b29-80e4c74a7a7f}</UniqueIdentifier>
+      <Extensions>h</Extensions>
+    </Filter>
+    <Filter Include="Header Files\OSD Header Files">
+      <UniqueIdentifier>{5545a38c-ab50-4f5e-bab6-929a96e0614f}</UniqueIdentifier>
+      <Extensions>h</Extensions>
+    </Filter>
+    <Filter Include="Header Files\VM Common Header Files">
+      <UniqueIdentifier>{e86fb2a8-0a21-4d23-a9a2-5a0066464099}</UniqueIdentifier>
+      <Extensions>h</Extensions>
+    </Filter>
+    <Filter Include="Header Files\VM Driver Header Files">
+      <UniqueIdentifier>{7dfbb035-932e-4d6c-9050-ecd56bc4885d}</UniqueIdentifier>
+      <Extensions>h</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{8d450f40-30f5-4d8f-a0ea-8892ab3facc3}</UniqueIdentifier>
+      <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\common.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\config.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\fifo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\fileio.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\debugger.cpp">
+      <Filter>Source Files\EMU Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\emu.cpp">
+      <Filter>Source Files\EMU Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\win32\osd.cpp">
+      <Filter>Source Files\OSD Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\win32\osd_console.cpp">
+      <Filter>Source Files\OSD Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\win32\osd_input.cpp">
+      <Filter>Source Files\OSD Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\win32\osd_midi.cpp">
+      <Filter>Source Files\OSD Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\win32\osd_screen.cpp">
+      <Filter>Source Files\OSD Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\win32\osd_sound.cpp">
+      <Filter>Source Files\OSD Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\win32\winmain.cpp">
+      <Filter>Source Files\OSD Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\and.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\cmu800.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\datarec.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\disk.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\event.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\i8253.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\i8255.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\io.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\mb8877.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\midi.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\mz1p17.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\noise.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\not.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\pcm1bit.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\prnfile.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\sn76489an.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\z80.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\z80pio.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\z80sio.cpp">
+      <Filter>Source Files\VM Common Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\mz700\cmos.cpp">
+      <Filter>Source Files\VM Driver Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\mz700\emm.cpp">
+      <Filter>Source Files\VM Driver Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\mz700\floppy.cpp">
+      <Filter>Source Files\VM Driver Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\mz700\joystick.cpp">
+      <Filter>Source Files\VM Driver Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\mz700\kanji.cpp">
+      <Filter>Source Files\VM Driver Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\mz700\keyboard.cpp">
+      <Filter>Source Files\VM Driver Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\mz700\memory.cpp">
+      <Filter>Source Files\VM Driver Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\mz700\mz700.cpp">
+      <Filter>Source Files\VM Driver Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\mz700\psg.cpp">
+      <Filter>Source Files\VM Driver Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\mz700\quickdisk.cpp">
+      <Filter>Source Files\VM Driver Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vm\mz700\ramfile.cpp">
+      <Filter>Source Files\VM Driver Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\fifo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\fileio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\emu.h">
+      <Filter>Header Files\EMU Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\win32\osd.h">
+      <Filter>Header Files\OSD Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\and.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\cmu800.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\datarec.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\debugger.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\device.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\disk.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\event.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\i8253.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\i8255.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\io.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\mb8877.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\midi.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\mz1p17.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\noise.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\not.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\pcm1bit.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\prnfile.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\sn76489an.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\vm.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\vm_template.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\z80.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\z80pio.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\z80sio.h">
+      <Filter>Header Files\VM Common Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\mz700\cmos.h">
+      <Filter>Header Files\VM Driver Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\mz700\emm.h">
+      <Filter>Header Files\VM Driver Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\mz700\floppy.h">
+      <Filter>Header Files\VM Driver Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\mz700\joystick.h">
+      <Filter>Header Files\VM Driver Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\mz700\kanji.h">
+      <Filter>Header Files\VM Driver Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\mz700\keyboard.h">
+      <Filter>Header Files\VM Driver Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\mz700\memory.h">
+      <Filter>Header Files\VM Driver Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\mz700\mz700.h">
+      <Filter>Header Files\VM Driver Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\mz700\psg.h">
+      <Filter>Header Files\VM Driver Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\mz700\quickdisk.h">
+      <Filter>Header Files\VM Driver Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\vm\mz700\ramfile.h">
+      <Filter>Header Files\VM Driver Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\res\resource.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\src\res\indicator\access_green.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\src\res\indicator\access_off.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\src\res\indicator\access_on.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\src\res\mz1500.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\src\res\mz1500.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
