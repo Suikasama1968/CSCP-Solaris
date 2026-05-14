@@ -29,6 +29,11 @@
 #include <time.h>
 #include <math.h>
 #include <limits.h>
+#ifdef __cplusplus
+#include <string>
+#include <algorithm>
+#include <cctype>
+#endif
 #include <wchar.h>
 
 #ifndef _MAX_PATH

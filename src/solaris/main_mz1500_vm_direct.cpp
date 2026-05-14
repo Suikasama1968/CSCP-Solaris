@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <mutex>
 #include <queue>
 #include <string>
@@ -27,7 +28,7 @@ static void usage(const char *argv0)
         "       %s --cmt tape-file\n"
         "       %s --qd quick-disk-file\n"
         "  F12: reset\n"
-        "  Console: help, status, qd <file>, cmt <file>, cmtplay, cmtstop, reset, exit\n"
+        "  Console: help, status, qd <file>, cmt <file>, cmtplay, cmtrec <file>, cmtstop, reset, exit\n"
         "  Window close: quit\n",
         argv0, argv0, argv0);
 }
@@ -55,7 +56,7 @@ struct DirectConfig {
     int render_mode;
     int sound_rate;
     int sound_samples;
-    int present_interval;
+    int frame_skip;
     int screen_scale;
     int audio_target_chunks;
     int audio_initial_chunks;
@@ -67,7 +68,7 @@ struct DirectConfig {
         : render_mode(config.solaris_render_mode),
           sound_rate(sound_frequency_to_rate(config.sound_frequency)),
           sound_samples(positive_or(config.solaris_sound_samples, 512)),
-          present_interval(positive_or(config.solaris_present_interval, 8)),
+          frame_skip(positive_or(config.solaris_frame_skip, 8)),
           screen_scale(positive_or(config.solaris_screen_scale, 1)),
           audio_target_chunks(positive_or(config.solaris_audio_target_chunks, 4)),
           audio_initial_chunks(positive_or(config.solaris_audio_initial_chunks, 3)),
@@ -109,6 +110,7 @@ static void print_console_help()
         "  qd <quick-disk-file>\n"
         "  cmt <tape-file>\n"
         "  cmtplay\n"
+        "  cmtrec <tape-file>\n"
         "  cmtstop\n"
         "  reset\n"
         "  exit\n");
@@ -134,10 +136,9 @@ static bool file_exists(const char *path)
 {
     if(path == NULL || path[0] == '\0') return false;
 
-    FILE *fp = fopen(path, "rb");
-    if(fp == NULL) return false;
-    fclose(fp);
-    return true;
+    struct stat st;
+    if(stat(path, &st) != 0) return false;
+    return S_ISREG(st.st_mode);
 }
 
 static void queue_sound_chunks(EMU& emu, SOLARIS_SDL_HOST& host,
@@ -171,12 +172,12 @@ static void print_status(EMU& emu, SOLARIS_SDL_HOST& host,
 {
     fprintf(stderr,
             "Status:\n"
-            "  screen: %dx%d scale=%d present_interval=%d\n"
+            "  screen: %dx%d scale=%d frame_skip=%d\n"
             "  renderer: mode=%d\n"
             "  audio: %s rate=%d samples=%d queued=%u bytes\n"
             "  audio_buffer: target=%d initial=%d max_refill=%d\n",
             emu.screen_width(), emu.screen_height(),
-            direct_config.screen_scale, direct_config.present_interval,
+            direct_config.screen_scale, direct_config.frame_skip,
             host.render_mode(),
             audio_enabled && host.audio_opened() ? "on" : "off",
             host.audio_rate(), host.audio_samples(),
@@ -185,7 +186,7 @@ static void print_status(EMU& emu, SOLARIS_SDL_HOST& host,
             direct_config.audio_initial_chunks,
             direct_config.audio_max_refill_chunks);
 }
-
+// Process console commands from the queue. This is called from the main thread, so it can safely interact with the VM and host.
 static void process_console_commands(ConsoleState *state, EMU& emu, SOLARIS_SDL_HOST& host, const DirectConfig& direct_config, bool audio_enabled, bool *exit_requested)
 {
     std::string line;
@@ -231,6 +232,15 @@ static void process_console_commands(ConsoleState *state, EMU& emu, SOLARIS_SDL_
         } else if(cmd == "cmtplay") {
             emu.get_vm()->push_play(0);
             fprintf(stderr, "CMT play\n");
+        } else if(cmd == "cmtrec") {
+            if(arg.empty()) {
+                fprintf(stderr, "Usage: cmtrec <tape-file>\n");
+            } else {
+                emu.get_vm()->push_stop(0);
+                emu.get_vm()->rec_tape(0, arg.c_str());
+                emu.get_vm()->push_play(0);
+                fprintf(stderr, "CMT rec: %s\n", arg.c_str());
+            }
         } else if(cmd == "cmtstop") {
             emu.get_vm()->push_stop(0);
             fprintf(stderr, "CMT stop\n");
@@ -357,7 +367,7 @@ int main(int argc, char **argv)
     const unsigned frame_ms = (fps > 1.0) ? (unsigned)(500.0 / fps + 0.5) : 8;
 
     int frame_count = 0;
-    int present_interval = direct_config.present_interval;
+    int frame_skip = direct_config.frame_skip;
 
     bool exit_requested = false;
     while(!host.quit_requested() && !exit_requested) {
@@ -380,7 +390,7 @@ int main(int argc, char **argv)
         }
 
         // frame skipping: only present every N frames to limit CPU usage. The VM runs at full speed regardless.
-        if((frame_count++ % present_interval) == 0) {
+        if((frame_count++ % frame_skip) == 0) {
             vm->draw_screen();
             host.present(emu.screen_buffer(), screen_w, screen_h, screen_pitch);
         }

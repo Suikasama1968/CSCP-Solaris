@@ -206,7 +206,7 @@ typedef struct {
 	// solaris direct host
 	#if defined(__SOLARIS__)
 		int solaris_render_mode;
-		int solaris_present_interval;
+		int solaris_frame_skip;
 		int solaris_screen_scale;
 		int solaris_sound_samples;
 		int solaris_audio_target_chunks;

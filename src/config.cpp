@@ -131,7 +131,7 @@ void initialize_config()
 	#ifdef __SOLARIS__
 		config.sound_frequency = 3;	// 11025Hz
 		config.solaris_render_mode = 0;
-		config.solaris_present_interval = 8;
+		config.solaris_frame_skip = 8;
 		config.solaris_screen_scale = 1;
 		config.solaris_sound_samples = 512;
 		config.solaris_audio_target_chunks = 4;
@@ -360,7 +360,7 @@ void load_config(const _TCHAR* config_path)
 	#endif
 	#ifdef __SOLARIS__
 	config.solaris_render_mode = MyGetPrivateProfileInt(_T("Solaris"), _T("RenderMode"), config.solaris_render_mode, config_path);
-	config.solaris_present_interval = MyGetPrivateProfileInt(_T("Solaris"), _T("PresentInterval"), config.solaris_present_interval, config_path);
+	config.solaris_frame_skip = MyGetPrivateProfileInt(_T("Solaris"), _T("FrameSkip"), config.solaris_frame_skip, config_path);
 	config.solaris_screen_scale = MyGetPrivateProfileInt(_T("Solaris"), _T("ScreenScale"), config.solaris_screen_scale, config_path);
 	config.solaris_sound_samples = MyGetPrivateProfileInt(_T("Solaris"), _T("SoundSamples"), config.solaris_sound_samples, config_path);
 	config.solaris_audio_target_chunks = MyGetPrivateProfileInt(_T("Solaris"), _T("AudioTargetChunks"), config.solaris_audio_target_chunks, config_path);
@@ -621,7 +621,7 @@ void save_config(const _TCHAR* config_path)
 	#endif
 	#ifdef __SOLARIS__
 	MyWritePrivateProfileInt(_T("Solaris"), _T("RenderMode"), config.solaris_render_mode, config_path);
-	MyWritePrivateProfileInt(_T("Solaris"), _T("PresentInterval"), config.solaris_present_interval, config_path);
+	MyWritePrivateProfileInt(_T("Solaris"), _T("FrameSkip"), config.solaris_frame_skip, config_path);
 	MyWritePrivateProfileInt(_T("Solaris"), _T("ScreenScale"), config.solaris_screen_scale, config_path);
 	MyWritePrivateProfileInt(_T("Solaris"), _T("SoundSamples"), config.solaris_sound_samples, config_path);
 	MyWritePrivateProfileInt(_T("Solaris"), _T("AudioTargetChunks"), config.solaris_audio_target_chunks, config_path);
