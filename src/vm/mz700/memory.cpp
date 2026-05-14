@@ -1045,6 +1045,8 @@ void MEMORY::draw_line(int v)
 	int ptr = 40 * (v >> 3);
 #if defined(_MZ1500)
 	int line = v & 7;
+	bool pcg_enabled = (priority & 1) != 0;
+	bool pcg_over_text = (priority & 2) != 0;
 #endif
 #if defined(_MZ700)
 	bool pcg_active = ((config.dipswitch & DIPSWITCH_PCG700) && !(pcg_ctrl & 8));
@@ -1053,7 +1055,7 @@ void MEMORY::draw_line(int v)
 	for(int x = 0; x < 320; x += 8) {
 		uint8_t attr = vram[ptr | 0x800];
 #if defined(_MZ1500)
-		uint8_t pcg_attr = vram[ptr | 0xc00];
+		uint8_t pcg_attr = pcg_enabled ? vram[ptr | 0xc00] : 0;
 #endif
 		uint16_t code = (vram[ptr] << 3) | ((attr & 0x80) << 4);
 		uint8_t col_b = attr & 7;
@@ -1066,9 +1068,8 @@ void MEMORY::draw_line(int v)
 		uint8_t* dest = &screen[v][x];
 		
 #if defined(_MZ1500)
-		if((priority & 1) && (pcg_attr & 8)) {
+		if(pcg_attr & 8) {
 			uint16_t pcg_code = (vram[ptr | 0x400] << 3) | ((pcg_attr & 0xc0) << 5);
-			uint8_t pcg_dot[8];
 			uint8_t pat_b = pcg[pcg_code | line | 0x0000];
 			uint8_t pat_r = pcg[pcg_code | line | 0x2000];
 			uint8_t pat_g = pcg[pcg_code | line | 0x4000];
@@ -1076,35 +1077,28 @@ void MEMORY::draw_line(int v)
 			const uint8_t* pcg_r = mz1500_pcg_r[pat_r];
 			const uint8_t* pcg_g = mz1500_pcg_g[pat_g];
 			const uint8_t* text_dot = mz1500_text_expand[col_b][col_f][pat_t];
-			const uint8_t* text_on = mz1500_text_on[pat_t];
-			pcg_dot[0] = pcg_b[0] | pcg_r[0] | pcg_g[0];
-			pcg_dot[1] = pcg_b[1] | pcg_r[1] | pcg_g[1];
-			pcg_dot[2] = pcg_b[2] | pcg_r[2] | pcg_g[2];
-			pcg_dot[3] = pcg_b[3] | pcg_r[3] | pcg_g[3];
-			pcg_dot[4] = pcg_b[4] | pcg_r[4] | pcg_g[4];
-			pcg_dot[5] = pcg_b[5] | pcg_r[5] | pcg_g[5];
-			pcg_dot[6] = pcg_b[6] | pcg_r[6] | pcg_g[6];
-			pcg_dot[7] = pcg_b[7] | pcg_r[7] | pcg_g[7];			
-			if(priority & 2) {
+			uint8_t dot;
+			if(pcg_over_text) {
 				// pcg > text
-				dest[0] = pcg_dot[0] ? pcg_dot[0] : text_dot[0];
-				dest[1] = pcg_dot[1] ? pcg_dot[1] : text_dot[1];
-				dest[2] = pcg_dot[2] ? pcg_dot[2] : text_dot[2];
-				dest[3] = pcg_dot[3] ? pcg_dot[3] : text_dot[3];
-				dest[4] = pcg_dot[4] ? pcg_dot[4] : text_dot[4];
-				dest[5] = pcg_dot[5] ? pcg_dot[5] : text_dot[5];
-				dest[6] = pcg_dot[6] ? pcg_dot[6] : text_dot[6];
-				dest[7] = pcg_dot[7] ? pcg_dot[7] : text_dot[7];
+				dot = pcg_b[0] | pcg_r[0] | pcg_g[0]; dest[0] = dot ? dot : text_dot[0];
+				dot = pcg_b[1] | pcg_r[1] | pcg_g[1]; dest[1] = dot ? dot : text_dot[1];
+				dot = pcg_b[2] | pcg_r[2] | pcg_g[2]; dest[2] = dot ? dot : text_dot[2];
+				dot = pcg_b[3] | pcg_r[3] | pcg_g[3]; dest[3] = dot ? dot : text_dot[3];
+				dot = pcg_b[4] | pcg_r[4] | pcg_g[4]; dest[4] = dot ? dot : text_dot[4];
+				dot = pcg_b[5] | pcg_r[5] | pcg_g[5]; dest[5] = dot ? dot : text_dot[5];
+				dot = pcg_b[6] | pcg_r[6] | pcg_g[6]; dest[6] = dot ? dot : text_dot[6];
+				dot = pcg_b[7] | pcg_r[7] | pcg_g[7]; dest[7] = dot ? dot : text_dot[7];
 			} else {
+				const uint8_t* text_on = mz1500_text_on[pat_t];
 				// text_fore > pcg > text_back
-				dest[0] = text_on[0] ? col_f : pcg_dot[0] ? pcg_dot[0] : col_b;
-				dest[1] = text_on[1] ? col_f : pcg_dot[1] ? pcg_dot[1] : col_b;
-				dest[2] = text_on[2] ? col_f : pcg_dot[2] ? pcg_dot[2] : col_b;
-				dest[3] = text_on[3] ? col_f : pcg_dot[3] ? pcg_dot[3] : col_b;
-				dest[4] = text_on[4] ? col_f : pcg_dot[4] ? pcg_dot[4] : col_b;
-				dest[5] = text_on[5] ? col_f : pcg_dot[5] ? pcg_dot[5] : col_b;
-				dest[6] = text_on[6] ? col_f : pcg_dot[6] ? pcg_dot[6] : col_b;
-				dest[7] = text_on[7] ? col_f : pcg_dot[7] ? pcg_dot[7] : col_b;
+				dot = pcg_b[0] | pcg_r[0] | pcg_g[0]; dest[0] = text_on[0] ? col_f : dot ? dot : col_b;
+				dot = pcg_b[1] | pcg_r[1] | pcg_g[1]; dest[1] = text_on[1] ? col_f : dot ? dot : col_b;
+				dot = pcg_b[2] | pcg_r[2] | pcg_g[2]; dest[2] = text_on[2] ? col_f : dot ? dot : col_b;
+				dot = pcg_b[3] | pcg_r[3] | pcg_g[3]; dest[3] = text_on[3] ? col_f : dot ? dot : col_b;
+				dot = pcg_b[4] | pcg_r[4] | pcg_g[4]; dest[4] = text_on[4] ? col_f : dot ? dot : col_b;
+				dot = pcg_b[5] | pcg_r[5] | pcg_g[5]; dest[5] = text_on[5] ? col_f : dot ? dot : col_b;
+				dot = pcg_b[6] | pcg_r[6] | pcg_g[6]; dest[6] = text_on[6] ? col_f : dot ? dot : col_b;
+				dot = pcg_b[7] | pcg_r[7] | pcg_g[7]; dest[7] = text_on[7] ? col_f : dot ? dot : col_b;
 			}
 		} else {
 #endif
