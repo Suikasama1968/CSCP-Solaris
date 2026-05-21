@@ -1209,9 +1209,11 @@ void MEMORY::draw_screen()
 #endif
 	emu->set_vm_screen_lines(200);
 #if defined(_MZ1500)
-	scrntype_t pal8[8];
+	scrntype_t pal2[8][2];
 	for(int i = 0; i < 8; i++) {
-		pal8[i] = palette_pc[palette[i] & 7];
+		scrntype_t c = palette_pc[palette[i] & 7];
+		pal2[i][0] = c;
+		pal2[i][1] = c;
 	}
 #endif
 #if defined(__SOLARIS__) && defined(_MZ1500)
@@ -1226,19 +1228,25 @@ void MEMORY::draw_screen()
 		scrntype_t* dest0 = emu->get_screen_buffer(2 * y);
 		scrntype_t* dest1 = emu->get_screen_buffer(2 * y + 1);
 #endif
-		uint8_t* src = screen[y];		
-		for(int x = 0, x2 = 0; x < 320; x++, x2 += 2) {
+		uint8_t* src = screen[y];
 #if defined(_MZ1500)
-			dest0[x2] = dest0[x2 + 1] = pal8[src[x] & 7];
+		scrntype_t* d = dest0;
+		for(int x = 0; x < 320; x++) {
+			const scrntype_t* p = pal2[src[x] & 7];
+			*d++ = p[0];
+			*d++ = p[1];
+		}
+		my_memcpy(dest1, dest0, 640 * sizeof(scrntype_t));
 #else
+		for(int x = 0, x2 = 0; x < 320; x++, x2 += 2) {
 			dest0[x2] = dest0[x2 + 1] = palette_pc[src[x] & 7];
-#endif
 		}
 		if(!config.scan_line) {
 			my_memcpy(dest1, dest0, 640 * sizeof(scrntype_t));
 		} else {
 			memset(dest1, 0, 640 * sizeof(scrntype_t));
 		}
+#endif
 	}
 	emu->screen_skip_line(true);
 }

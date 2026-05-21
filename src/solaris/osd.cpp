@@ -1,8 +1,9 @@
 /*
- * Minimal EMU services for the Solaris SDL direct host.
+  Minimal EMU services for the Solaris + SDL2 direct host.
+  Copyright (c) 2026 Masaharu
  */
 
-#include "compat.h"
+#include "osd_compat.h"
 #include "../emu.h"
 #include "../vm/vm.h"
 #include "../vm/vm_template.h"

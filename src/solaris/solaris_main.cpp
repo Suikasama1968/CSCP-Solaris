@@ -1,9 +1,11 @@
 /*
  * Direct VM host for SHARP MZ-1500 on Solaris + SDL2.
+ * Copyright (c) 2026 M.Yoshiyama
  */
 
-#include "compat.h"
-#include "sdl_host.h"
+#include "osd_compat.h"
+#include "osd.h"
+#include "osd_console.h"
 
 #include "../common.h"
 #include "../config.h"
@@ -15,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <X11/Xlib.h>
 #include <mutex>
 #include <queue>
 #include <string>
@@ -28,7 +31,7 @@ static void usage(const char *argv0)
         "       %s --cmt tape-file\n"
         "       %s --qd quick-disk-file\n"
         "  F12: reset\n"
-        "  Console: help, status, qd <file>, cmt <file>, cmtplay, cmtrec <file>, cmtstop, reset, exit\n"
+        "  Console: help, status, qd <file>, qdeject, cmt <file>, cmtplay, cmtrec <file>, cmtstop, cmteject, cmtff, cmtrew, option <mask> <0|1>, reset, exit\n"
         "  Window close: quit\n",
         argv0, argv0, argv0);
 }
@@ -95,7 +98,19 @@ static std::string strip_quotes(const std::string& s)
         char first = s[0];
         char last = s[s.size() - 1];
         if((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
-            return s.substr(1, s.size() - 2);
+            std::string unquoted;
+            for(size_t i = 1; i + 1 < s.size(); i++) {
+                if(s[i] == '\\' && i + 2 < s.size()) {
+                    char next = s[i + 1];
+                    if(next == first || next == '\\') {
+                        unquoted += next;
+                        i++;
+                        continue;
+                    }
+                }
+                unquoted += s[i];
+            }
+            return unquoted;
         }
     }
     return s;
@@ -108,10 +123,15 @@ static void print_console_help()
         "  help\n"
         "  status\n"
         "  qd <quick-disk-file>\n"
+        "  qdeject\n"
         "  cmt <tape-file>\n"
         "  cmtplay\n"
         "  cmtrec <tape-file>\n"
         "  cmtstop\n"
+        "  cmteject\n"
+        "  cmtff\n"
+        "  cmtrew\n"
+        "  option <mask> <0|1>\n"
         "  reset\n"
         "  exit\n");
 }
@@ -186,73 +206,119 @@ static void print_status(EMU& emu, SOLARIS_SDL_HOST& host,
             direct_config.audio_initial_chunks,
             direct_config.audio_max_refill_chunks);
 }
-// Process console commands from the queue. This is called from the main thread, so it can safely interact with the VM and host.
+static void process_command_line(const std::string& line, EMU& emu, SOLARIS_SDL_HOST& host, const DirectConfig& direct_config, bool audio_enabled, bool *exit_requested)
+{
+    std::string cmd;
+    std::string arg;
+    size_t sep = line.find_first_of(" \t");
+    if(sep == std::string::npos) {
+        cmd = line;
+    } else {
+        cmd = line.substr(0, sep);
+        arg = strip_quotes(trim_string(line.substr(sep + 1)));
+    }
+
+    if(cmd == "help") {
+        print_console_help();
+    } else if(cmd == "status") {
+        print_status(emu, host, direct_config, audio_enabled);
+    } else if(cmd == "exit") {
+        *exit_requested = true;
+    } else if(cmd == "reset") {
+        emu.get_vm()->reset();
+        fprintf(stderr, "VM reset\n");
+    } else if(cmd == "qd") {
+        if(arg.empty()) {
+            fprintf(stderr, "Usage: qd <quick-disk-file>\n");
+        } else if(!file_exists(arg.c_str())) {
+            fprintf(stderr, "QuickDisk file not found: %s\n", arg.c_str());
+        } else {
+            emu.get_vm()->open_quick_disk(0, arg.c_str());
+            fprintf(stderr, "QuickDisk mounted: %s\n", arg.c_str());
+        }
+    } else if(cmd == "cmt" || cmd == "--cmt") {
+        if(arg.empty()) {
+            fprintf(stderr, "Usage: cmt <tape-file>\n");
+        } else if(!file_exists(arg.c_str())) {
+            fprintf(stderr, "CMT file not found: %s\n", arg.c_str());
+        } else {
+            emu.get_vm()->push_stop(0);
+            emu.get_vm()->play_tape(0, arg.c_str());
+            fprintf(stderr, "CMT mounted: %s\n", arg.c_str());
+        }
+    } else if(cmd == "cmtplay") {
+        emu.get_vm()->push_play(0);
+        fprintf(stderr, "CMT play\n");
+    } else if(cmd == "cmtrec") {
+        if(arg.empty()) {
+            fprintf(stderr, "Usage: cmtrec <tape-file>\n");
+        } else {
+            emu.get_vm()->push_stop(0);
+            emu.get_vm()->rec_tape(0, arg.c_str());
+            emu.get_vm()->push_play(0);
+            fprintf(stderr, "CMT rec: %s\n", arg.c_str());
+        }
+    } else if(cmd == "cmtstop") {
+        emu.get_vm()->push_stop(0);
+        fprintf(stderr, "CMT stop\n");
+    } else if(cmd == "cmteject") {
+        emu.get_vm()->close_tape(0);
+        fprintf(stderr, "CMT ejected\n");
+    } else if(cmd == "cmtff") {
+        emu.get_vm()->push_fast_forward(0);
+        fprintf(stderr, "CMT fast forward\n");
+    } else if(cmd == "cmtrew") {
+        emu.get_vm()->push_fast_rewind(0);
+        fprintf(stderr, "CMT fast rewind\n");
+    } else if(cmd == "qdeject") {
+        emu.get_vm()->close_quick_disk(0);
+        fprintf(stderr, "QuickDisk ejected\n");
+    } else if(cmd == "option") {
+        if(arg.empty()) {
+            fprintf(stderr, "Usage: option <mask> <0|1>\n");
+        } else {
+            char *end = NULL;
+            unsigned long mask = strtoul(arg.c_str(), &end, 0);
+            while(end != NULL && (*end == ' ' || *end == '\t')) end++;
+            int enabled = (end != NULL) ? atoi(end) : 0;
+            if(mask == 0) {
+                fprintf(stderr, "Invalid option mask: %s\n", arg.c_str());
+            } else {
+                if(enabled) {
+                    config.option_switch |= (uint32_t)mask;
+                } else {
+                    config.option_switch &= ~(uint32_t)mask;
+                }
+                emu.get_vm()->update_config();
+                fprintf(stderr, "Option switch: mask=0x%lx %s\n", mask, enabled ? "on" : "off");
+            }
+        }
+    } else {
+        fprintf(stderr, "Unknown command: %s\n", cmd.c_str());
+        fprintf(stderr, "Type 'help' for commands.\n");
+    }
+}
+
 static void process_console_commands(ConsoleState *state, EMU& emu, SOLARIS_SDL_HOST& host, const DirectConfig& direct_config, bool audio_enabled, bool *exit_requested)
 {
     std::string line;
     while(pop_console_command(state, &line)) {
-        std::string cmd;
-        std::string arg;
-        size_t sep = line.find_first_of(" \t");
-        if(sep == std::string::npos) {
-            cmd = line;
-        } else {
-            cmd = line.substr(0, sep);
-            arg = strip_quotes(trim_string(line.substr(sep + 1)));
-        }
+        process_command_line(line, emu, host, direct_config, audio_enabled, exit_requested);
+    }
+}
 
-        if(cmd == "help") {
-            print_console_help();
-        } else if(cmd == "status") {
-            print_status(emu, host, direct_config, audio_enabled);
-        } else if(cmd == "exit") {
-            *exit_requested = true;
-        } else if(cmd == "reset") {
-            emu.get_vm()->reset();
-            fprintf(stderr, "VM reset\n");
-        } else if(cmd == "qd") {
-            if(arg.empty()) {
-                fprintf(stderr, "Usage: qd <quick-disk-file>\n");
-            } else if(!file_exists(arg.c_str())) {
-                fprintf(stderr, "QuickDisk file not found: %s\n", arg.c_str());
-            } else {
-                emu.get_vm()->open_quick_disk(0, arg.c_str());
-                fprintf(stderr, "QuickDisk mounted: %s\n", arg.c_str());
-            }
-        } else if(cmd == "cmt" || cmd == "--cmt") {
-            if(arg.empty()) {
-                fprintf(stderr, "Usage: cmt <tape-file>\n");
-            } else if(!file_exists(arg.c_str())) {
-                fprintf(stderr, "CMT file not found: %s\n", arg.c_str());
-            } else {
-                emu.get_vm()->push_stop(0);
-                emu.get_vm()->play_tape(0, arg.c_str());
-                fprintf(stderr, "CMT mounted: %s\n", arg.c_str());
-            }
-        } else if(cmd == "cmtplay") {
-            emu.get_vm()->push_play(0);
-            fprintf(stderr, "CMT play\n");
-        } else if(cmd == "cmtrec") {
-            if(arg.empty()) {
-                fprintf(stderr, "Usage: cmtrec <tape-file>\n");
-            } else {
-                emu.get_vm()->push_stop(0);
-                emu.get_vm()->rec_tape(0, arg.c_str());
-                emu.get_vm()->push_play(0);
-                fprintf(stderr, "CMT rec: %s\n", arg.c_str());
-            }
-        } else if(cmd == "cmtstop") {
-            emu.get_vm()->push_stop(0);
-            fprintf(stderr, "CMT stop\n");
-        } else {
-            fprintf(stderr, "Unknown command: %s\n", cmd.c_str());
-            fprintf(stderr, "Type 'help' for commands.\n");
-        }
+static void process_control_commands(SOLARIS_CONTROL_WINDOW *control_window, EMU& emu, SOLARIS_SDL_HOST& host, const DirectConfig& direct_config, bool audio_enabled, bool *exit_requested)
+{
+    std::string line;
+    while(control_window->pop_command(&line)) {
+        process_command_line(line, emu, host, direct_config, audio_enabled, exit_requested);
     }
 }
 
 int main(int argc, char **argv)
 {
+    XInitThreads();
+
     if(argc > 3) {
         usage(argv[0]);
         return 1;
@@ -335,6 +401,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    // The detached console thread can remain blocked in fgets() until process exit.
+    // Keep this state alive for the process lifetime to avoid a stale queue pointer.
     ConsoleState *console_state = new ConsoleState;
     SDL_Thread *console_thread = SDL_CreateThread(console_thread_proc, "console", console_state);
     if(console_thread != NULL) {
@@ -342,6 +410,9 @@ int main(int argc, char **argv)
     } else {
         fprintf(stderr, "SDL_CreateThread(console): %s\n", SDL_GetError());
     }
+
+    SOLARIS_CONTROL_WINDOW control_window;
+    control_window.start(direct_config.initial_cmt, direct_config.initial_qd);
 
     const int sound_samples = direct_config.sound_samples;
     bool audio_enabled = host.open_audio(direct_config.sound_rate, sound_samples);
@@ -383,6 +454,7 @@ int main(int argc, char **argv)
         vm->run();
 
         process_console_commands(console_state, emu, host, direct_config, audio_enabled, &exit_requested);
+        process_control_commands(&control_window, emu, host, direct_config, audio_enabled, &exit_requested);
 
         if(audio_enabled && host.queued_audio_bytes() < audio_chunk_bytes * (uint32_t)audio_target_chunks) {
             queue_sound_chunks(emu, host, sound_samples, audio_chunk_bytes,
@@ -400,7 +472,7 @@ int main(int argc, char **argv)
         host.delay_ms(frame_ms);
     }
 
-    delete console_state;
+    control_window.stop();
     delete vm;
     emu.set_vm(NULL);
     return 0;

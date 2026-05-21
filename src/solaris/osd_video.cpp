@@ -1,5 +1,10 @@
-#include "sdl_host.h"
-#include "compat.h"
+/*
+ *   SDL host for SHARP MZ-1500 on Solaris + SDL2.
+ * Copyright (c) 2026 M.Yoshiyama
+ */
+
+#include "osd.h"
+#include "osd_compat.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

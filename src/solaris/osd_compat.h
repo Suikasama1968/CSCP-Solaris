@@ -1,11 +1,13 @@
-#ifndef CSP_SOLARIS_COMPAT_H
-#define CSP_SOLARIS_COMPAT_H
-
 /*
  * Solaris compatibility layer for Common Source Code Project.
  * Keep this included with:
- *   -include source/src/solaris/compat.h
+ *   -include source/src/solaris/osd_compat.h
+ * Copyright (c) 2026 M.Yoshiyama
  */
+
+#ifndef CSP_SOLARIS_COMPAT_H
+#define CSP_SOLARIS_COMPAT_H
+
 
 #define __EXTENSIONS__ 1
 #define _REENTRANT 1

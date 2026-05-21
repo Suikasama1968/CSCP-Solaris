@@ -3,15 +3,17 @@ TARGET = emuz1500-solaris
 CXX ?= /usr/local/bin/g++
 SDL_CFLAGS ?= -I/usr/local/include/SDL2 -D_REENTRANT
 SDL_LIBS ?= -L/usr/local/lib -lSDL2
+GTK2_CFLAGS ?= $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
+GTK2_LIBS ?= $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
 
 CXXFLAGS += -O3 -std=gnu++11 -mvis -mcpu=ultrasparc -mtune=ultrasparc
 CXXFLAGS += -D_MZ1500 -D__BIG_ENDIAN__ -D__SOLARIS__
 CXXFLAGS += -I./src -I./src/vm -I./src/vm/mz700 -I./src/solaris
-CXXFLAGS += -include ./src/solaris/compat.h
-CXXFLAGS += $(SDL_CFLAGS) -MMD -MP
+CXXFLAGS += -include ./src/solaris/osd_compat.h
+CXXFLAGS += $(SDL_CFLAGS) $(GTK2_CFLAGS) -MMD -MP
 
-LDFLAGS += -L/usr/local/lib -R/usr/local/lib
-LDLIBS += $(SDL_LIBS) -lsocket -lnsl -lm -lrt -lpthread
+LDFLAGS += -L/usr/local/lib -Wl,-R,/usr/local/lib -L/usr/openwin/lib -Wl,-R,/usr/openwin/lib
+LDLIBS += $(SDL_LIBS) $(GTK2_LIBS) -lX11 -lsocket -lnsl -lm -lrt -lpthread
 
 COMMON_SRCS = \
 	src/common.cpp \
@@ -52,9 +54,10 @@ VM_SRCS = \
 	src/vm/z80sio.cpp
 
 SOLARIS_SRCS = \
-	src/solaris/emu_direct.cpp \
-	src/solaris/sdl_host.cpp \
-	src/solaris/main_mz1500_vm_direct.cpp
+	src/solaris/osd.cpp \
+	src/solaris/osd_console.cpp \
+	src/solaris/osd_video.cpp \
+	src/solaris/solaris_main.cpp
 
 SRCS = $(COMMON_SRCS) $(VM_SRCS) $(SOLARIS_SRCS)
 OBJS = $(SRCS:.cpp=.o)

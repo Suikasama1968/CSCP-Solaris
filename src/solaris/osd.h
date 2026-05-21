@@ -1,3 +1,8 @@
+/*
+ *   SDL host for SHARP MZ-1500 on Solaris + SDL2.
+ *   Copyright (c) 2026 M.Yoshiyama
+ */
+
 #pragma once
 
 #include <SDL.h>
