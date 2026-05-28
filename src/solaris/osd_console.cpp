@@ -39,12 +39,28 @@ struct OptionSpec {
     uint32_t mask;
 };
 
+struct FrequencySpec {
+    const char *label;
+    int value;
+};
+
+struct LatencySpec {
+    const char *label;
+    int value;
+};
+
+struct FrameSkipSpec {
+    const char *label;
+    int value;
+};
+
+// Control
 static const MenuSpec control_menu[] = {
     { "Reset",  "reset",  false, false },
-    { "Status", "status", false, false },
     { "Exit",   "exit",   false, false }
 };
 
+// CMT
 static const MenuSpec cmt_menu[] = {
     { "Play...",      "cmt",      true,  false },
     { "Rec...",       "cmtrec",   true,  true  },
@@ -55,11 +71,13 @@ static const MenuSpec cmt_menu[] = {
     { "Fast Rewind",  "cmtrew",   false, false }
 };
 
+// QD
 static const MenuSpec qd_menu[] = {
     { "Insert...", "qd",      true,  false },
     { "Eject",     "qdeject", false, false }
 };
 
+// Device -> Option
 static const OptionSpec option_menu[] = {
     { "MZ-1E05 (FD I/F)",    1u << 8  },
     { "MZ-1R12 (CMOS RAM)",  1u << 10 },
@@ -67,6 +85,34 @@ static const OptionSpec option_menu[] = {
     { "MZ-1R23 (Kanji ROM)", 1u << 12 },
     { "MZ-1R24 (Dict. ROM)", 1u << 13 },
     { "PIO-3034 (EMM)",      1u << 14 }
+};
+
+// Host -> Sound
+static const FrequencySpec frequency_menu[] = {
+    { "2000Hz",  0 },
+    { "4000Hz",  1 },
+    { "8000Hz",  2 },
+    { "11025Hz", 3 },
+    { "22050Hz", 4 },
+    { "44100Hz", 5 },
+    { "48000Hz", 6 },
+    { "96000Hz", 7 }
+};
+
+static const LatencySpec latency_menu[] = {
+    { "50msec",  0 },
+    { "100msec", 1 },
+    { "200msec", 2 },
+    { "300msec", 3 },
+    { "400msec", 4 }
+};
+
+// Host -> Frame Skip
+static const FrameSkipSpec frame_skip_menu[] = {
+    { "1", 1 },
+    { "2", 2 },
+    { "4", 4 },
+    { "8", 8 }
 };
 
 static const char *file_basename(const std::string& path)
@@ -151,6 +197,7 @@ static std::string choose_file(SOLARIS_CONTROL_WINDOW *owner, GtkWidget *parent,
     return owner != NULL && owner->stop_requested() ? std::string() : state.path;
 }
 
+// Quote file paths before passing them through the shared command parser.
 static std::string quote_command_path(const std::string& path)
 {
     std::string quoted = "\"";
@@ -171,14 +218,19 @@ static void queue_command(ControlWidgetData *widget_data, const char *command, b
         return;
     }
 
+    if(!needs_path && strcmp(command, "reset") == 0) {
+        widget_data->owner->request_reset();
+        return;
+    }
+
     if(needs_path) {
         const char *title = "Select image file";
         if(strcmp(command, "cmt") == 0) {
-            title = "Select CMT file";
+            title = "Data Recoder Tape [Play]";
         } else if(strcmp(command, "cmtrec") == 0) {
-            title = "Select CMT recording file";
+            title = "Data Recoder Tape [Rec]";
         } else if(strcmp(command, "qd") == 0) {
-            title = "Select QuickDisk file";
+            title = "Quick Disk";
         }
         std::string path = choose_file(widget_data->owner, widget_data->window, title, save_dialog);
         if(path.empty()) return;
@@ -198,6 +250,8 @@ static void queue_command(ControlWidgetData *widget_data, const char *command, b
     }
 }
 
+// Menu callbacks stay thin: translate the selected item to a command string
+// and let the host thread touch VM state.
 static void queue_button_command(GtkWidget *button, gpointer data)
 {
     const char *command = (const char *)g_object_get_data(G_OBJECT(button), "command");
@@ -209,6 +263,7 @@ static void queue_button_command(GtkWidget *button, gpointer data)
 static gboolean close_control_window(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
     bool *running = (bool *)data;
+
     if(running != NULL) {
         *running = false;
     }
@@ -248,6 +303,45 @@ static void queue_option_command(GtkCheckMenuItem *item, gpointer data)
     widget_data->owner->push_command(command);
 }
 
+static void queue_frequency_command(GtkCheckMenuItem *item, gpointer data)
+{
+    if(!gtk_check_menu_item_get_active(item)) return;
+
+    ControlWidgetData *widget_data = (ControlWidgetData *)data;
+    if(widget_data == NULL || widget_data->owner == NULL) return;
+
+    int value = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(item), "frequency"));
+    char command[32];
+    snprintf(command, sizeof(command), "frequency %d", value);
+    widget_data->owner->push_command(command);
+}
+
+static void queue_latency_command(GtkCheckMenuItem *item, gpointer data)
+{
+    if(!gtk_check_menu_item_get_active(item)) return;
+
+    ControlWidgetData *widget_data = (ControlWidgetData *)data;
+    if(widget_data == NULL || widget_data->owner == NULL) return;
+
+    int value = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(item), "latency"));
+    char command[32];
+    snprintf(command, sizeof(command), "latency %d", value);
+    widget_data->owner->push_command(command);
+}
+
+static void queue_frame_skip_command(GtkCheckMenuItem *item, gpointer data)
+{
+    if(!gtk_check_menu_item_get_active(item)) return;
+
+    ControlWidgetData *widget_data = (ControlWidgetData *)data;
+    if(widget_data == NULL || widget_data->owner == NULL) return;
+
+    int value = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(item), "frame_skip"));
+    char command[32];
+    snprintf(command, sizeof(command), "frameskip %d", value);
+    widget_data->owner->push_command(command);
+}
+
 static GtkWidget *create_device_menu(ControlWidgetData *widget_data)
 {
     GtkWidget *device_root = gtk_menu_item_new_with_label("Device");
@@ -270,8 +364,59 @@ static GtkWidget *create_device_menu(ControlWidgetData *widget_data)
     return device_root;
 }
 
+static GtkWidget *create_host_menu(ControlWidgetData *widget_data)
+{
+    GtkWidget *host_root = gtk_menu_item_new_with_label("Host");
+    GtkWidget *host_menu = gtk_menu_new();
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(host_root), host_menu);
+
+    GtkWidget *sound_root = gtk_menu_item_new_with_label("Sound");
+    GtkWidget *sound_menu = gtk_menu_new();
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(sound_root), sound_menu);
+    gtk_menu_shell_append(GTK_MENU_SHELL(host_menu), sound_root);
+
+    GSList *group = NULL;
+    for(size_t i = 0; i < sizeof(frequency_menu) / sizeof(frequency_menu[0]); i++) {
+        GtkWidget *item = gtk_radio_menu_item_new_with_label(group, frequency_menu[i].label);
+        group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), config.sound_frequency == frequency_menu[i].value);
+        g_object_set_data(G_OBJECT(item), "frequency", GINT_TO_POINTER(frequency_menu[i].value));
+        g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(queue_frequency_command), widget_data);
+        gtk_menu_shell_append(GTK_MENU_SHELL(sound_menu), item);
+    }
+
+    gtk_menu_shell_append(GTK_MENU_SHELL(sound_menu), gtk_separator_menu_item_new());
+
+    group = NULL;
+    for(size_t i = 0; i < sizeof(latency_menu) / sizeof(latency_menu[0]); i++) {
+        GtkWidget *item = gtk_radio_menu_item_new_with_label(group, latency_menu[i].label);
+        group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), config.sound_latency == latency_menu[i].value);
+        g_object_set_data(G_OBJECT(item), "latency", GINT_TO_POINTER(latency_menu[i].value));
+        g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(queue_latency_command), widget_data);
+        gtk_menu_shell_append(GTK_MENU_SHELL(sound_menu), item);
+    }
+
+    GtkWidget *frame_skip_root = gtk_menu_item_new_with_label("Frame Skip");
+    GtkWidget *frame_skip_submenu = gtk_menu_new();
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(frame_skip_root), frame_skip_submenu);
+    gtk_menu_shell_append(GTK_MENU_SHELL(host_menu), frame_skip_root);
+
+    group = NULL;
+    for(size_t i = 0; i < sizeof(frame_skip_menu) / sizeof(frame_skip_menu[0]); i++) {
+        GtkWidget *item = gtk_radio_menu_item_new_with_label(group, frame_skip_menu[i].label);
+        group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), config.solaris_frame_skip == frame_skip_menu[i].value);
+        g_object_set_data(G_OBJECT(item), "frame_skip", GINT_TO_POINTER(frame_skip_menu[i].value));
+        g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(queue_frame_skip_command), widget_data);
+        gtk_menu_shell_append(GTK_MENU_SHELL(frame_skip_submenu), item);
+    }
+
+    return host_root;
+}
+
 SOLARIS_CONTROL_WINDOW::SOLARIS_CONTROL_WINDOW()
-    : thread_started_(false), stop_requested_(false)
+    : thread_started_(false), stop_requested_(false), reset_requested_(false)
 {
 }
 
@@ -285,6 +430,7 @@ bool SOLARIS_CONTROL_WINDOW::start(const std::string& initial_cmt, const std::st
     initial_cmt_ = initial_cmt;
     initial_qd_ = initial_qd;
     stop_requested_ = false;
+    reset_requested_ = false;
     if(pthread_create(&thread_, NULL, thread_proc, this) != 0) {
         fprintf(stderr, "pthread_create(control window) failed\n");
         return false;
@@ -307,6 +453,16 @@ bool SOLARIS_CONTROL_WINDOW::stop_requested() const
     return stop_requested_.load();
 }
 
+bool SOLARIS_CONTROL_WINDOW::pop_reset_request()
+{
+    return reset_requested_.exchange(false);
+}
+
+void SOLARIS_CONTROL_WINDOW::request_reset()
+{
+    reset_requested_ = true;
+}
+
 bool SOLARIS_CONTROL_WINDOW::pop_command(std::string *command)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -323,6 +479,8 @@ void SOLARIS_CONTROL_WINDOW::push_command(const std::string& command)
     commands_.push(command);
 }
 
+// GTK runs on a separate thread so SDL input/video and VM execution can keep
+// their simple main-loop ownership.
 void* SOLARIS_CONTROL_WINDOW::thread_proc(void *arg)
 {
     ((SOLARIS_CONTROL_WINDOW *)arg)->thread_main();
@@ -363,6 +521,7 @@ void SOLARIS_CONTROL_WINDOW::thread_main()
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), create_menu("CMT", cmt_menu, sizeof(cmt_menu) / sizeof(cmt_menu[0]), &widget_data));
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), create_menu("QD", qd_menu, sizeof(qd_menu) / sizeof(qd_menu[0]), &widget_data));
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), create_device_menu(&widget_data));
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), create_host_menu(&widget_data));
     gtk_box_pack_start(GTK_BOX(vbox), menu_bar, FALSE, FALSE, 0);
 
     GtkWidget *content = gtk_vbox_new(FALSE, 8);

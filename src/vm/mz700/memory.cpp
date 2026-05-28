@@ -83,7 +83,8 @@
 	} \
 }
 
-#if defined(_MZ1500)
+// MZ-1500 text and PCG drawing tables to speed up rendering for Solaris.
+#if defined(_MZ1500) && defined(__SOLARIS__)
 static bool mz1500_draw_tables_initialized = false;
 static uint8_t mz1500_text_expand[8][8][256][8];
 static uint8_t mz1500_text_on[256][8];
@@ -137,7 +138,9 @@ void MEMORY::initialize()
 	memset(ext, 0xff, sizeof(ext));
 #if defined(_MZ1500)
 	memset(pcg, 0, sizeof(pcg));
+#if defined(__SOLARIS__)
 	initialize_mz1500_draw_tables();
+#endif
 #endif
 	memset(font, 0, sizeof(font));
 #if defined(SUPPORT_80COLUMN)
@@ -1067,7 +1070,7 @@ void MEMORY::draw_line(int v)
 #endif
 		uint8_t* dest = &screen[v][x];
 		
-#if defined(_MZ1500)
+#if defined(_MZ1500) && defined(__SOLARIS__)
 		if(pcg_attr & 8) {
 			uint16_t pcg_code = (vram[ptr | 0x400] << 3) | ((pcg_attr & 0xc0) << 5);
 			uint8_t pat_b = pcg[pcg_code | line | 0x0000];
@@ -1102,8 +1105,47 @@ void MEMORY::draw_line(int v)
 			}
 		} else {
 #endif
+#if defined(_MZ1500) && !defined(__SOLARIS__)
+		if(pcg_attr & 8) {
+			uint16_t pcg_code = (vram[ptr | 0x400] << 3) | ((pcg_attr & 0xc0) << 5);
+			uint8_t pcg_dot[8];
+			uint8_t pat_b = pcg[pcg_code | line | 0x0000];
+			uint8_t pat_r = pcg[pcg_code | line | 0x2000];
+			uint8_t pat_g = pcg[pcg_code | line | 0x4000];
+			pcg_dot[0] = ((pat_b & 0x80) >> 7) | ((pat_r & 0x80) >> 6) | ((pat_g & 0x80) >> 5);
+			pcg_dot[1] = ((pat_b & 0x40) >> 6) | ((pat_r & 0x40) >> 5) | ((pat_g & 0x40) >> 4);
+			pcg_dot[2] = ((pat_b & 0x20) >> 5) | ((pat_r & 0x20) >> 4) | ((pat_g & 0x20) >> 3);
+			pcg_dot[3] = ((pat_b & 0x10) >> 4) | ((pat_r & 0x10) >> 3) | ((pat_g & 0x10) >> 2);
+			pcg_dot[4] = ((pat_b & 0x08) >> 3) | ((pat_r & 0x08) >> 2) | ((pat_g & 0x08) >> 1);
+			pcg_dot[5] = ((pat_b & 0x04) >> 2) | ((pat_r & 0x04) >> 1) | ((pat_g & 0x04) >> 0);
+			pcg_dot[6] = ((pat_b & 0x02) >> 1) | ((pat_r & 0x02) >> 0) | ((pat_g & 0x02) << 1);
+			pcg_dot[7] = ((pat_b & 0x01) >> 0) | ((pat_r & 0x01) << 1) | ((pat_g & 0x01) << 2);
+			
+			if(pcg_over_text) {
+				// pcg > text
+				dest[0] = pcg_dot[0] ? pcg_dot[0] : (pat_t & 0x80) ? col_f : col_b;
+				dest[1] = pcg_dot[1] ? pcg_dot[1] : (pat_t & 0x40) ? col_f : col_b;
+				dest[2] = pcg_dot[2] ? pcg_dot[2] : (pat_t & 0x20) ? col_f : col_b;
+				dest[3] = pcg_dot[3] ? pcg_dot[3] : (pat_t & 0x10) ? col_f : col_b;
+				dest[4] = pcg_dot[4] ? pcg_dot[4] : (pat_t & 0x08) ? col_f : col_b;
+				dest[5] = pcg_dot[5] ? pcg_dot[5] : (pat_t & 0x04) ? col_f : col_b;
+				dest[6] = pcg_dot[6] ? pcg_dot[6] : (pat_t & 0x02) ? col_f : col_b;
+				dest[7] = pcg_dot[7] ? pcg_dot[7] : (pat_t & 0x01) ? col_f : col_b;
+			} else {
+				// text_fore > pcg > text_back
+				dest[0] = (pat_t & 0x80) ? col_f : pcg_dot[0] ? pcg_dot[0] : col_b;
+				dest[1] = (pat_t & 0x40) ? col_f : pcg_dot[1] ? pcg_dot[1] : col_b;
+				dest[2] = (pat_t & 0x20) ? col_f : pcg_dot[2] ? pcg_dot[2] : col_b;
+				dest[3] = (pat_t & 0x10) ? col_f : pcg_dot[3] ? pcg_dot[3] : col_b;
+				dest[4] = (pat_t & 0x08) ? col_f : pcg_dot[4] ? pcg_dot[4] : col_b;
+				dest[5] = (pat_t & 0x04) ? col_f : pcg_dot[5] ? pcg_dot[5] : col_b;
+				dest[6] = (pat_t & 0x02) ? col_f : pcg_dot[6] ? pcg_dot[6] : col_b;
+				dest[7] = (pat_t & 0x01) ? col_f : pcg_dot[7] ? pcg_dot[7] : col_b;
+			}
+		} else {
+#endif
 			// text only
-#if defined(_MZ1500)
+#if defined(_MZ1500) && defined(__SOLARIS__)
 			memcpy(dest, mz1500_text_expand[col_b][col_f][pat_t], 8);
 #else
 			dest[0] = (pat_t & 0x80) ? col_f : col_b;

@@ -1,6 +1,6 @@
 /*
   Minimal EMU services for the Solaris + SDL2 direct host.
-  Copyright (c) 2026 Masaharu
+  Copyright (c) 2026 M.Yoshiyama
  */
 
 #include "osd_compat.h"

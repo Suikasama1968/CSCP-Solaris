@@ -128,19 +128,7 @@ void initialize_config()
 		config.sound_tape_signal = true;
 		config.sound_tape_voice = true;
 	#endif
-	#ifdef __SOLARIS__
-		config.sound_frequency = 3;	// 11025Hz
-		config.solaris_render_mode = 0;
-		config.solaris_frame_skip = 8;
-		config.solaris_screen_scale = 1;
-		config.solaris_sound_samples = 512;
-		config.solaris_audio_target_chunks = 4;
-		config.solaris_audio_initial_chunks = 3;
-		config.solaris_audio_max_refill_chunks = 1;
-		config.solaris_initial_cmt[0] = 0;
-		config.solaris_initial_qd[0] = 0;
-	#endif
-	
+
 	// input
 	#ifdef USE_JOYSTICK
 		for(int i = 0; i < 4; i++) {
@@ -172,6 +160,21 @@ void initialize_config()
 		config.render_minor_version = 1;
 		config.rendering_type = CONFIG_RENDER_TYPE_STD;
 	#endif
+
+	// Solaris 
+	#ifdef __SOLARIS__
+		config.sound_frequency = 3;	// 11025Hz
+		config.solaris_render_mode = 0;
+		config.solaris_frame_skip = 1;
+		config.solaris_screen_scale = 1;
+		config.solaris_sound_samples = 512;
+		config.solaris_audio_target_chunks = 4;
+		config.solaris_audio_initial_chunks = 3;
+		config.solaris_audio_max_refill_chunks = 1;
+		config.solaris_initial_cmt[0] = 0;
+		config.solaris_initial_qd[0] = 0;
+	#endif
+	
 }
 
 void load_config(const _TCHAR* config_path)
@@ -349,7 +352,7 @@ void load_config(const _TCHAR* config_path)
 			int tmp_l = MyGetPrivateProfileInt(_T("Sound"), create_string(_T("VolumeLeft%d"), i + 1), config.sound_volume_l[i], config_path);
 			int tmp_r = MyGetPrivateProfileInt(_T("Sound"), create_string(_T("VolumeRight%d"), i + 1), config.sound_volume_r[i], config_path);
 			#ifdef _USE_QT
-				// Note: when using balance , levels are -40}20db to 0}20db.
+				// Note: when using balance , levels are -40ï¿½}20db to 0ï¿½}20db.
 				config.sound_volume_l[i] = max(-60, min(20, tmp_l));
 				config.sound_volume_r[i] = max(-60, min(20, tmp_r));
 			#else

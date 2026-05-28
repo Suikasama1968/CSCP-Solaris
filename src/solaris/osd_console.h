@@ -11,6 +11,8 @@
 #include <string>
 #include <pthread.h>
 
+// Small GTK control window used by the Solaris direct host.  It only queues
+// text commands; the VM thread consumes and executes them.
 class SOLARIS_CONTROL_WINDOW {
 public:
     SOLARIS_CONTROL_WINDOW();
@@ -19,6 +21,8 @@ public:
     bool start(const std::string& initial_cmt = std::string(), const std::string& initial_qd = std::string());
     void stop();
     bool stop_requested() const;
+    bool pop_reset_request();
+    void request_reset();
     bool pop_command(std::string *command);
     void push_command(const std::string& command);
 
@@ -26,6 +30,7 @@ private:
     pthread_t thread_;
     bool thread_started_;
     std::atomic<bool> stop_requested_;
+    std::atomic<bool> reset_requested_;
     std::mutex mutex_;
     std::queue<std::string> commands_;
     std::string initial_cmt_;

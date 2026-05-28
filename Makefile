@@ -1,4 +1,4 @@
-TARGET = emuz1500-solaris
+TARGET = mz1500
 
 CXX ?= /usr/local/bin/g++
 SDL_CFLAGS ?= -I/usr/local/include/SDL2 -D_REENTRANT
@@ -13,7 +13,7 @@ CXXFLAGS += -include ./src/solaris/osd_compat.h
 CXXFLAGS += $(SDL_CFLAGS) $(GTK2_CFLAGS) -MMD -MP
 
 LDFLAGS += -L/usr/local/lib -Wl,-R,/usr/local/lib -L/usr/openwin/lib -Wl,-R,/usr/openwin/lib
-LDLIBS += $(SDL_LIBS) $(GTK2_LIBS) -lX11 -lsocket -lnsl -lm -lrt -lpthread
+LDLIBS += $(SDL_LIBS) $(GTK2_LIBS) -lX11 -lsocket -lnsl -lm -lpthread
 
 COMMON_SRCS = \
 	src/common.cpp \

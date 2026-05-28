@@ -98,6 +98,7 @@ typedef char _TCHAR;
 #define _ftprintf fprintf
 #endif
 
+// Win32 API compatibility helpers.
 #ifndef ZeroMemory
 #define ZeroMemory(p,s) memset((p), 0, (s))
 #endif
@@ -114,9 +115,7 @@ static inline void solaris_sleep_ms(unsigned int ms)
 #define Sleep(ms) solaris_sleep_ms((ms))
 #endif
 
-/*
- * Some CSP code expects Win32 virtual key codes.
- */
+// Some CSP code expects Win32 virtual key codes.
 #ifndef VK_BACK
 #define VK_BACK        0x08
 #define VK_TAB         0x09
@@ -214,16 +213,6 @@ static inline void solaris_sleep_ms(unsigned int ms)
 #define VK_OEM_6       0xdd
 #define VK_OEM_7       0xde
 #define VK_OEM_102     0xe2
-#endif
-
-#if defined(__SOLARIS__)
-/* clock_gettime exists on Solaris but may require -lrt. Keep a fallback name. */
-static inline uint64_t solaris_now_usec(void)
-{
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return ((uint64_t)tv.tv_sec * 1000000ULL) + (uint64_t)tv.tv_usec;
-}
 #endif
 
 #endif /* CSP_SOLARIS_COMPAT_H */
