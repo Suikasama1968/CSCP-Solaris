@@ -2,6 +2,8 @@
 *.d
 *.ROM
 *.rom
+*.BIN
+*.bin
 *.MZT
 *.mzt
 emuz1500-solaris
