@@ -1,4 +1,4 @@
-# EmuZ-1500 Solaris Source
+# EmuZ-1500 Solaris Port
 
 [English version](README.en.md)
 
