@@ -1,11 +1,11 @@
 /*
- * Direct VM host for SHARP MZ-1500 on Solaris + SDL2.
- * Copyright (c) 2026 M.Yoshiyama
+ * Direct VM host for SHARP MZ-1500 on Solaris using SDL2.
+ * Copyright (c) 2026 Suikasama1968
  */
 
 #include "osd_compat.h"
 #include "osd.h"
-#include "osd_console.h"
+#include "osd_control.h"
 
 #include "../common.h"
 #include "../config.h"
@@ -113,19 +113,7 @@ static std::string strip_quotes(const std::string& s)
         char first = s[0];
         char last = s[s.size() - 1];
         if((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
-            std::string unquoted;
-            for(size_t i = 1; i + 1 < s.size(); i++) {
-                if(s[i] == '\\' && i + 2 < s.size()) {
-                    char next = s[i + 1];
-                    if(next == first || next == '\\') {
-                        unquoted += next;
-                        i++;
-                        continue;
-                    }
-                }
-                unquoted += s[i];
-            }
-            return unquoted;
+            return s.substr(1, s.size() - 2);
         }
     }
     return s;
@@ -177,6 +165,7 @@ static bool file_exists(const char *path)
     if(path == NULL || path[0] == '\0') return false;
 
     struct stat st;
+    
     if(stat(path, &st) != 0) return false;
     return S_ISREG(st.st_mode);
 }
@@ -215,6 +204,36 @@ static void save_current_config()
     save_config(create_local_path(_T("%s.ini"), _T(CONFIG_NAME)));
 }
 
+// Checking and mounting initial media
+static bool mount_initial_media(VM *vm, const DirectConfig& direct_config)
+{
+    if(vm == NULL) return false;
+
+    if(!direct_config.initial_cmt.empty()) {
+        if(!file_exists(direct_config.initial_cmt.c_str())) {
+            fprintf(stderr, "CMT not found: %s\n", direct_config.initial_cmt.c_str());
+            return false;
+        }
+        vm->play_tape(0, direct_config.initial_cmt.c_str());
+        vm->push_play(0);
+#ifdef DEBUG
+        fprintf(stderr, "CMT mounted: %s\n", direct_config.initial_cmt.c_str());
+#endif
+    }
+    if(!direct_config.initial_qd.empty()) {
+        if(!file_exists(direct_config.initial_qd.c_str())) {
+            fprintf(stderr, "Quick Disk not found: %s\n", direct_config.initial_qd.c_str());
+            return false;
+        }
+        vm->open_quick_disk(0, direct_config.initial_qd.c_str());
+#ifdef DEBUG
+        fprintf(stderr, "Quick Disk mounted: %s\n", direct_config.initial_qd.c_str());
+#endif
+    }
+    return true;
+}
+
+// Re-creates the VM instance and reinitializes
 static bool reset_vm(EMU& emu, VM *&vm, bool audio_enabled, int sound_rate, int sound_samples)
 {
     memset(emu.key_buffer(), 0, 256);
@@ -255,6 +274,8 @@ static void print_status(EMU& emu, SOLARIS_SDL_HOST& host,
             direct_config.audio_max_refill_chunks);
 }
 #endif
+
+// command base operations for both console and control window
 static void process_command_line(const std::string& line, EMU& emu, SOLARIS_SDL_HOST& host, DirectConfig& direct_config, bool audio_enabled, bool *exit_requested, bool *reset_requested)
 {
     std::string cmd;
@@ -286,11 +307,12 @@ static void process_command_line(const std::string& line, EMU& emu, SOLARIS_SDL_
         if(arg.empty()) {
             fprintf(stderr, "Usage: qd <quick-disk-file>\n");
         } else if(!file_exists(arg.c_str())) {
-            fprintf(stderr, "QuickDisk file not found: %s\n", arg.c_str());
+            fprintf(stderr, "Quick Disk not found: %s\n", arg.c_str());
         } else {
             emu.get_vm()->open_quick_disk(0, arg.c_str());
+            direct_config.initial_qd = arg;
 #ifdef DEBUG
-            fprintf(stderr, "QuickDisk mounted: %s\n", arg.c_str());
+            fprintf(stderr, "Quick Disk mounted: %s\n", arg.c_str());
 #endif
         }
     } else if(cmd == "cmt" || cmd == "--cmt") {
@@ -301,6 +323,7 @@ static void process_command_line(const std::string& line, EMU& emu, SOLARIS_SDL_
         } else {
             emu.get_vm()->push_stop(0);
             emu.get_vm()->play_tape(0, arg.c_str());
+            direct_config.initial_cmt = arg;
 #ifdef DEBUG
             fprintf(stderr, "CMT mounted: %s\n", arg.c_str());
 #endif
@@ -328,6 +351,7 @@ static void process_command_line(const std::string& line, EMU& emu, SOLARIS_SDL_
 #endif
     } else if(cmd == "cmteject") {
         emu.get_vm()->close_tape(0);
+        direct_config.initial_cmt.clear();
 #ifdef DEBUG
         fprintf(stderr, "CMT ejected\n");
 #endif
@@ -343,8 +367,9 @@ static void process_command_line(const std::string& line, EMU& emu, SOLARIS_SDL_
 #endif
     } else if(cmd == "qdeject") {
         emu.get_vm()->close_quick_disk(0);
+        direct_config.initial_qd.clear();
 #ifdef DEBUG
-        fprintf(stderr, "QuickDisk ejected\n");
+        fprintf(stderr, "Quick Disk ejected\n");
 #endif
     } else if(cmd == "option") {
         if(arg.empty()) {
@@ -475,7 +500,7 @@ int main(int argc, char **argv)
             direct_config.initial_qd.clear();
         } else if(strcmp(argv[1], "--qd") == 0) {
             if(!file_exists(argv[2])) {
-                fprintf(stderr, "QuickDisk file not found: %s\n", argv[2]);
+                fprintf(stderr, "Quick Disk not found: %s\n", argv[2]);
                 delete vm;
                 return 1;
             }
@@ -488,28 +513,10 @@ int main(int argc, char **argv)
         }
     }
 
-    if(!direct_config.initial_cmt.empty()) {
-        if(!file_exists(direct_config.initial_cmt.c_str())) {
-            fprintf(stderr, "CMT file not found: %s\n", direct_config.initial_cmt.c_str());
-            delete vm;
-            return 1;
-        }
-        vm->play_tape(0, direct_config.initial_cmt.c_str());
-        vm->push_play(0);
-#ifdef DEBUG
-        fprintf(stderr, "CMT mounted: %s\n", direct_config.initial_cmt.c_str());
-#endif
-    }
-    if(!direct_config.initial_qd.empty()) {
-        if(!file_exists(direct_config.initial_qd.c_str())) {
-            fprintf(stderr, "QuickDisk file not found: %s\n", direct_config.initial_qd.c_str());
-            delete vm;
-            return 1;
-        }
-        vm->open_quick_disk(0, direct_config.initial_qd.c_str());
-#ifdef DEBUG
-        fprintf(stderr, "QuickDisk mounted: %s\n", direct_config.initial_qd.c_str());
-#endif
+    // Checking mounted media
+    if(!mount_initial_media(vm, direct_config)) {
+        delete vm;
+        return 1;
     }
 
     SOLARIS_SDL_HOST host;
@@ -520,8 +527,7 @@ int main(int argc, char **argv)
     }
 
 #ifdef DEBUG
-    // The detached console thread can remain blocked in fgets() until process exit.
-    // Keep this state alive for the process lifetime to avoid a stale queue pointer.
+    // Console thread for handling user console input for DEBUG mode.
     ConsoleState *console_state = new ConsoleState;
     SDL_Thread *console_thread = SDL_CreateThread(console_thread_proc, "console", console_state);
     if(console_thread != NULL) {
@@ -585,6 +591,8 @@ int main(int argc, char **argv)
             if(!reset_vm(emu, vm, audio_enabled, host.audio_rate(), sound_samples)) {
                 fprintf(stderr, "VM reset failed\n");
                 exit_requested = true;
+            } else if(!mount_initial_media(vm, direct_config)) {
+                fprintf(stderr, "Media remount after reset failed\n");
             }
             frame_count = 0;
         }
@@ -596,7 +604,7 @@ int main(int argc, char **argv)
                                audio_target_chunks, audio_max_refill_chunks);
         }
 
-        // frame skipping: only present every N frames to limit CPU usage. The VM runs at full speed regardless.
+        // frame skipping 
         if((frame_count++ & (direct_config.frame_skip - 1)) == 0) {
             vm->draw_screen();
             host.present(emu.screen_buffer(), screen_w, screen_h, screen_pitch);

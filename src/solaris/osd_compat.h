@@ -1,8 +1,7 @@
 /*
  * Solaris compatibility layer for Common Source Code Project.
- * Keep this included with:
- *   -include source/src/solaris/osd_compat.h
- * Copyright (c) 2026 M.Yoshiyama
+ * Build with this header force-included before other project headers.
+ * Copyright (c) 2026 Suikasama1968
  */
 
 #ifndef CSP_SOLARIS_COMPAT_H

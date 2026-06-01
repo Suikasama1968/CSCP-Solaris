@@ -1,84 +1,61 @@
 # EmuZ-1500 Solaris Source
 
-[日本語版はこちら](README.ja.md)
+[English version](README.en.md)
 
-This repository contains a Solaris-focused EmuZ-1500 source distribution based
-on Takeda Toshiya's retro PC emulator common source code.  The original source
-can be downloaded from https://takeda-toshiya.my.coocan.jp.  The original
-project documentation is kept in `readme.txt`.
+このリポジトリは、TAKEDA, toshiya氏による Common Source Code Project のソースコードをベースにした、Solaris 向け EmuZ-1500 公開用ソースです。
+元ソースは https://takeda-toshiya.my.coocan.jp よりダウンロードできます。
 
-Only the Solaris EmuZ-1500 host is wired up and tested here.  The shared source
-tree may still contain code for other machines, but this repository should be
-treated as an EmuZ-1500 Solaris build.
+動作確認の対象は EmuZ-1500 のみです。
+共通ソースツリーには他機種向けのコードが含まれていますが対応していません。
 
-## Contents
+## 内容
 
-- `src/` - common emulator code, virtual machine devices, and host code needed
-  by the Solaris EmuZ-1500 build.
-- `src/solaris/` - Solaris direct host using SDL2 and GTK2.
-- `src/vm/mz700/` - MZ-700/MZ-1500 family VM implementation used by this build.
-  It is mostly unchanged from the original source, except for performance
-  improvements in `memory.cpp`.
-- `license/` - GPL and third-party license texts.
+- `src/` - Solaris向けに修正した共通エミュレータコード。
+- `src/solaris/` - SDL2 と GTK2 を使用する Solaris 専用コード。
+- `src/vm/mz700/` - このビルドで使用する MZ-700/MZ-1500 系 VM 実装。基本的に元ソースのままですが、`memory.cpp` には性能改善のための変更しています。
+- `g++/` - GCC/GNU make 用のビルドファイル。
+- `license/` - GPL および同梱されている第三者ライセンス文書。
 
-## Build
+## ビルド
 
-The root `Makefile` builds the Solaris EmuZ-1500 host with GCC and GNU make:
+`g++/Makefile.mz1500` で Solaris 版 EmuZ-1500 ホストをビルドします。
+コンパイラは GCC、make は GNU make (`gmake`) を想定しています。
 
 ```sh
-gmake
+gmake -f g++/Makefile.mz1500
 ```
 
-The Solaris build expects:
+ビルドには OS 標準の機能のほか以下が必要です。
 
-- GCC with C++11 support
+- C++11 対応の GCC
 - GNU make (`gmake`)
-- SDL2 headers and libraries
-- GTK2 headers and libraries
+- SDL2 のヘッダとライブラリ
+- GTK2 のヘッダとライブラリ
 
-The generated executable is:
+生成される実行ファイルは以下です。
 
 ```sh
 ./mz1500
 ```
 
-Optional image arguments:
+実行例:
 
 ```sh
 ./mz1500 tape-file
-./mz1500 --cmt tape-file
-./mz1500 --qd quick-disk-file
+./mz1500 --cmt tape-file.mzt
+./mz1500 --qd quick-disk-file.mzt
 ```
 
 ## Solaris Control UI
 
-The Solaris host cannot use the same window layout as the Windows version, so
-it provides a separate GTK control window.  It includes a subset of menu items
-that follows the Windows operations.
+Windows と同じ画面構成にできなかったため、操作ウィンドウを別に設けています。
+Windows の操作に準拠したサブセットのメニューを用意しています。
 
-Console command input is disabled in release builds.  It is still available for
-diagnostics when the source is built with `-DDEBUG`:
+## ライセンス
 
-```sh
-env CXXFLAGS=-DDEBUG gmake
-```
+Common Source Code Project 由来のソースコードは GNU General Public License
+Version 2 or later の下で利用できます。著作権は各ソースコードの作者に帰属します。
 
-In a debug build, stdin accepts commands such as `help`, `status`, `cmt`,
-`cmtrec`, `cmtplay`, `cmtstop`, `cmteject`, `cmtff`, `cmtrew`, `qd`,
-`qdeject`, `option`, `reset`, and `exit`.
-
-## License
-
-The source code is available under the GNU General Public License Version 2 or
-later.  See `license/COPYING.txt` for the license text and the files under
-`license/` for bundled third-party notices.
-
-## Notes for GitHub Uploads
-
-- Keep `readme.txt` because it contains the original project description and
-  acknowledgements.
-- Keep the complete `license/` directory when publishing the repository.
-- Make clear that this repository publishes the Solaris EmuZ-1500 build, not a
-  full upstream mirror of all original platforms.
-- Do not publish generated binaries or local object files unless a release
-  package intentionally includes them.
+ライセンス本文は `license/COPYING.txt` を参照してください。元プロジェクトおよび各作者による
+説明は `readme.txt` と `readme_by_*.txt` を参照してください。同梱されている第三者由来コードの
+ライセンス文書は `license/` 以下にあります。
